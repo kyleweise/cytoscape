@@ -19,7 +19,8 @@ ui <- fluidPage(
 
    sidebarLayout(
       sidebarPanel(
-         tags$p('Minimal Example integrated cytoscape into a shiny application. No formatting or cleaning has been done.')
+         tags$p('Minimal Example integrated cytoscape into a shiny application. No formatting or cleaning has been done.'),
+         actionButton(inputId = 'test_btn', 'Test filter')
       ),
 
       mainPanel(
@@ -30,22 +31,29 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  # generate some data
+  df <- cytoscape::comtrade
+
+  nodes <- data.frame(id = unique(c(df$reporter, df$partner)), stringsAsFactors = FALSE,
+                      weight = sample(x = c(1:100), 71))
+  edges <- df %>%
+    dplyr::select(source = reporter,
+                  target = partner) %>%
+    dplyr::mutate(id = paste(source, '_', target))
+
+  # draw the network
+  cy <- cytoscape(nodes = nodes, edges = edges) %>%
+    layout('breadthfirst', directed = TRUE) %>%
+    panzoom() %>% cy_filter(filter = "[weight > 25]")
+
+   # observeEvent(input$test_btn, {
+   #   cy %>% cy_filter(filter = "[weight > 25]")
+   # })
+
+
 
    output$network <- renderCytoscape({
-     # generate some data
-     df <- cytoscape::comtrade
-
-     nodes <- data.frame(id = unique(c(df$reporter, df$partner)), stringsAsFactors = FALSE)
-     edges <- df %>%
-       dplyr::select(source = reporter,
-                     target = partner) %>%
-       dplyr::mutate(id = paste(source, '_', target))
-
-     # draw the network
-     cytoscape(nodes = nodes, edges = edges) %>%
-       layout('breadthfirst', directed = TRUE) %>%
-       panzoom()
-
+     cy
    })
 }
 
